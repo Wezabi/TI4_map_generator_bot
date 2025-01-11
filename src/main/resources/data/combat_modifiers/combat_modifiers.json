@@ -449,6 +449,20 @@
         "forCombatAbility": "AFB"
     },
     {
+        "alias": "all_targets_afb",
+        "type": "target_mod",
+        "value": "1",
+        "persistenceType": "ONE_ROUND",
+        "scope": "",
+        "related": [
+            {
+                "type": "action_cards",
+                "alias": "waylay"
+            }
+        ],
+        "forCombatAbility": "AFB"
+    },
+    {
         "alias": "minus1_roll_tnelis_flagship",
         "type": "extrarolls",
         "value": "-1",

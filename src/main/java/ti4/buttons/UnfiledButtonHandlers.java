@@ -2752,6 +2752,8 @@ public class UnfiledButtonHandlers { // TODO: move all of these methods to a bet
         TemporaryCombatModifierModel combatModAC = CombatTempModHelper.getPossibleTempModifier(Constants.AC,
             acAlias,
             player.getNumberTurns());
+            System.out.println("acAlias: " + acAlias);
+            System.out.println("combatModAC: " + combatModAC);
         if (combatModAC != null) {
             player.addNewTempCombatMod(combatModAC);
             MessageHelper.sendMessageToChannel(event.getChannel(),

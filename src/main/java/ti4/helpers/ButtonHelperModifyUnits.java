@@ -29,6 +29,7 @@ import ti4.map.UnitHolder;
 import ti4.message.BotLogger;
 import ti4.message.MessageHelper;
 import ti4.model.StrategyCardModel;
+import ti4.model.TemporaryCombatModifierModel;
 import ti4.model.UnitModel;
 import ti4.service.combat.CombatRollService;
 import ti4.service.combat.CombatRollType;
@@ -104,39 +105,80 @@ public class ButtonHelperModifyUnits {
         Player cabal = Helper.getPlayerFromAbility(game, "devour");
         Player mentakHero = game
             .getPlayerFromColorOrFaction(game.getStoredValue("mentakHero"));
-        if (hits > 0 && unitHolder.getUnitCount(UnitType.Fighter, player.getColor()) > 0) {
-            for (Map.Entry<UnitKey, Integer> unitEntry : units.entrySet()) {
-                if (!player.unitBelongsToPlayer(unitEntry.getKey()))
-                    continue;
-                UnitModel unitModel = player.getUnitFromUnitKey(unitEntry.getKey());
-                if (unitModel == null)
-                    continue;
-                UnitKey unitKey = unitEntry.getKey();
-                String unitName = unitKey.unitName();
-                int totalUnits = unitEntry.getValue();
-                int min = Math.min(totalUnits, hits);
-                if (unitName.equalsIgnoreCase("fighter") && min > 0) {
-                    msg.append("> Destroyed ").append(min).append(" ").append(UnitEmojis.fighter).append("\n");
-                    hits -= min;
-                    var unit = new ParsedUnit(unitKey, min, unitHolder.getName());
-                    RemoveUnitService.removeUnit(event, tile, game, unit, true);
+        player.getTempCombatModifiers().stream().forEach(m -> System.out.println(m));
+        boolean waylayCombatModifier = player.getTempCombatModifiers().stream().anyMatch(m -> m.getModifier().getAlias().equals("all_targets_afb"));
+        if(hits > 0) {
+            if(waylayCombatModifier) {
+                System.out.println("waylay in play");
+                List<String> assignHitOrder = new ArrayList<>(List.of("fighter", "destroyer", "cruiser", "remainingSustains", "nraShenanigans", "carrier", "dreadnought", "flagship", "warsun"));
 
-                    if (cabal != null
-                        && (!cabal.getFaction().equalsIgnoreCase(player.getFaction())
-                            || ButtonHelper.doesPlayerHaveFSHere("cabal_flagship", cabal, tile))
-                        && FoWHelper.playerHasShipsInSystem(cabal, tile)) {
-                        ButtonHelperFactionSpecific.cabalEatsUnit(player, game, cabal, min, unitName, event);
+                for (String thingToHit : assignHitOrder) {
+                    for (Map.Entry<UnitKey, Integer> unitEntry : units.entrySet()) {
+                        if (!player.unitBelongsToPlayer(unitEntry.getKey()))
+                            continue;
+                        UnitModel unitModel = player.getUnitFromUnitKey(unitEntry.getKey());
+                        if (unitModel == null)
+                            continue;
+                        UnitKey unitKey = unitEntry.getKey();
+                        String unitName = unitKey.unitName();
+                        int totalUnits = unitEntry.getValue();
+                        int min = Math.min(totalUnits, hits);
+                        if (min > 0 && unitName.equalsIgnoreCase(thingToHit)) {
+                            msg.append("> Destroyed ").append(min).append(" ").append(unitKey.unitEmoji()).append("\n");
+                            hits -= min;
+                            var unit = new ParsedUnit(unitKey, min, unitHolder.getName());
+                            RemoveUnitService.removeUnit(event, tile, game, unit, true);
+        
+                            if (cabal != null
+                                && (!cabal.getFaction().equalsIgnoreCase(player.getFaction())
+                                    || ButtonHelper.doesPlayerHaveFSHere("cabal_flagship", cabal, tile))
+                                && FoWHelper.playerHasShipsInSystem(cabal, tile)) {
+                                ButtonHelperFactionSpecific.cabalEatsUnit(player, game, cabal, min, unitName, event);
+                            }
+                            if (player.hasAbility("heroism")) {
+                                ButtonHelperFactionSpecific.cabalEatsUnit(player, game, player, min, unitName, event);
+                            }
+                            if (mentakHero != null) {
+                                ButtonHelperFactionSpecific.mentakHeroProducesUnit(player, game, mentakHero, min,
+                                    unitName, event, tile);
+                            }
+                        }
                     }
-                    if (player.hasAbility("heroism")) {
-                        ButtonHelperFactionSpecific.cabalEatsUnit(player, game, player, min, unitName, event);
-                    }
-                    if (mentakHero != null) {
-                        ButtonHelperFactionSpecific.mentakHeroProducesUnit(player, game, mentakHero, min,
-                            unitName, event, tile);
+                }
+            } else if (unitHolder.getUnitCount(UnitType.Fighter, player.getColor()) > 0) {
+                for (Map.Entry<UnitKey, Integer> unitEntry : units.entrySet()) {
+                    if (!player.unitBelongsToPlayer(unitEntry.getKey()))
+                        continue;
+                    UnitModel unitModel = player.getUnitFromUnitKey(unitEntry.getKey());
+                    if (unitModel == null)
+                        continue;
+                    UnitKey unitKey = unitEntry.getKey();
+                    String unitName = unitKey.unitName();
+                    int totalUnits = unitEntry.getValue();
+                    int min = Math.min(totalUnits, hits);
+                    if (unitName.equalsIgnoreCase("fighter") && min > 0) {
+                        msg.append("> Destroyed ").append(min).append(" ").append(UnitEmojis.fighter).append("\n");
+                        hits -= min;
+                        var unit = new ParsedUnit(unitKey, min, unitHolder.getName());
+                        RemoveUnitService.removeUnit(event, tile, game, unit, true);
+    
+                        if (cabal != null
+                            && (!cabal.getFaction().equalsIgnoreCase(player.getFaction())
+                                || ButtonHelper.doesPlayerHaveFSHere("cabal_flagship", cabal, tile))
+                            && FoWHelper.playerHasShipsInSystem(cabal, tile)) {
+                            ButtonHelperFactionSpecific.cabalEatsUnit(player, game, cabal, min, unitName, event);
+                        }
+                        if (player.hasAbility("heroism")) {
+                            ButtonHelperFactionSpecific.cabalEatsUnit(player, game, player, min, unitName, event);
+                        }
+                        if (mentakHero != null) {
+                            ButtonHelperFactionSpecific.mentakHeroProducesUnit(player, game, mentakHero, min,
+                                unitName, event, tile);
+                        }
                     }
                 }
             }
-        }
+        } 
         Player argent = Helper.getPlayerFromAbility(game, "raid_formation");
         if (hits > 0 && argent != null && FoWHelper.playerHasShipsInSystem(argent, tile) && argent != player
             && numSustains > 0) {

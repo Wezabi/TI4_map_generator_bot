@@ -34,6 +34,7 @@ import ti4.map.Tile;
 import ti4.map.UnitHolder;
 import ti4.message.MessageHelper;
 import ti4.model.UnitModel;
+import ti4.service.emoji.CardEmojis;
 import ti4.service.emoji.FactionEmojis;
 import ti4.service.emoji.TechEmojis;
 import ti4.service.leader.CommanderUnlockCheckService;
@@ -547,6 +548,12 @@ public class StartCombatService {
 
         List<Button> afbButtons = new ArrayList<>();
         afbButtons.add(Buttons.gray("combatRoll_" + tile.getPosition() + "_space_afb", "Roll " + CombatRollType.AFB.getValue()));
+        for (Player player : combatPlayers) {
+            if(player.getActionCards().keySet().contains("waylay"));
+            {
+                afbButtons.add(Buttons.blue("applytempcombatmod__" + Constants.AC + "__waylay", "Play Waylay", CardEmojis.ActionCard));
+            }
+        }
         MessageHelper.sendMessageToChannelWithButtons(threadChannel, "Buttons to roll ANTI-FIGHTER BARRAGE (if applicable).", afbButtons);
         if (!game.isFowMode()) {
             for (Player player : combatPlayers) {

@@ -75,6 +75,7 @@ public class CombatTempModHelper {
         int currentTurnCount) {
         TemporaryCombatModifierModel result = null;
         var combatModifiers = Mapper.getCombatModifiers();
+        System.out.println("possibleTempModifier for: " + relatedID + "\n" + relatedType + "\n" + currentTurnCount);
         Optional<CombatModifierModel> relevantMod = combatModifiers.values().stream()
             .filter(modifier -> modifier.isRelevantTo(relatedType, relatedID)
                 && (modifier.getPersistenceType().equals(Constants.MOD_TEMP_ONE_ROUND)
@@ -82,6 +83,7 @@ public class CombatTempModHelper {
                     || modifier.getPersistenceType().equals(Constants.MOD_TEMP_ONE_TACTICAL_ACTION)))
             .findFirst();
         if (relevantMod.isPresent()) {
+            System.out.println(relevantMod.get().getAlias());
             result = new TemporaryCombatModifierModel(relatedType, relatedID, relevantMod.get(), currentTurnCount);
         }
         return result;
