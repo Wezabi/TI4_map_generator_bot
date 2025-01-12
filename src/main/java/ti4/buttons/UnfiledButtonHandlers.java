@@ -847,8 +847,11 @@ public class UnfiledButtonHandlers { // TODO: move all of these methods to a bet
 
     @ButtonHandler("autoAssignAFBHits_")
     public static void autoAssignAFBHits(ButtonInteractionEvent event, Player player, String buttonID, Game game) {
+        player.getTempCombatModifiers().stream().forEach(m -> System.out.println(m));
+        boolean allShipsTargetable = player.getTempCombatModifiers().stream().anyMatch(m -> m.getModifier().getAlias().equals("all_targets_afb"));
+
         ButtonHelperModifyUnits.autoAssignAntiFighterBarrageHits(player, game, buttonID.split("_")[1],
-            Integer.parseInt(buttonID.split("_")[2]), event);
+            Integer.parseInt(buttonID.split("_")[2]), allShipsTargetable, event);
     }
 
     @ButtonHandler("cancelAFBHits_")
