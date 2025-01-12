@@ -1,5 +1,7 @@
 package ti4.buttons;
 
+import static org.apache.commons.lang3.StringUtils.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import org.apache.commons.lang3.function.Consumers;
 import org.jetbrains.annotations.NotNull;
 
@@ -700,6 +701,9 @@ public class UnfiledButtonHandlers { // TODO: move all of these methods to a bet
 
     @ButtonHandler("getAllTechOfType_")
     public static void getAllTechOfType(ButtonInteractionEvent event, Player player, String buttonID, Game game) {
+        getAllTechOfType(event, player, buttonID, game, event.getMessageChannel());
+    }
+    public static void getAllTechOfType(ButtonInteractionEvent event, Player player, String buttonID, Game game, MessageChannel channel) {
         String techType = buttonID.replace("getAllTechOfType_", "");
         String payType = null;
         if (techType.contains("_")) {
@@ -707,24 +711,43 @@ public class UnfiledButtonHandlers { // TODO: move all of these methods to a bet
             techType = split[0];
             payType = split[1];
         }
-        List<TechnologyModel> techs = Helper.getAllTechOfAType(game, techType, player);
-
+        List<TechnologyModel> techs;
         List<Button> buttons;
         if (payType == null) {
-            buttons = Helper.getTechButtons(techs, player);
-        } else {
+            payType = "normal";
+        }
+        if (techType.contains("allTechResearchable")) {
+            techs = Helper.getAllTechOfAType(game, "propulsion", player, true);
+            buttons = Helper.getTechButtons(techs, player, payType);
+            techs = Helper.getAllTechOfAType(game, "cybernetic", player, true);
+            buttons.addAll(Helper.getTechButtons(techs, player, payType));
+            techs = Helper.getAllTechOfAType(game, "biotic", player, true);
+            buttons.addAll(Helper.getTechButtons(techs, player, payType));
+            techs = Helper.getAllTechOfAType(game, "warfare", player, true);
+            buttons.addAll(Helper.getTechButtons(techs, player, payType));
+            techs = Helper.getAllTechOfAType(game, "unitupgrade", player, true);
+            buttons.addAll(Helper.getTechButtons(techs, player, payType));
+        }else{
+            techs = Helper.getAllTechOfAType(game, techType, player);
             buttons = Helper.getTechButtons(techs, player, payType);
         }
 
         if (game.isComponentAction()) {
-            buttons.add(Buttons.gray("acquireATech", "Get Technology of a Different Type"));
+            buttons.add(Buttons.gray("acquireATech", "Get Other Technology"));
         } else {
-            buttons.add(Buttons.gray("acquireATechWithSC", "Get Technology of a Different Type"));
+            buttons.add(Buttons.gray("acquireATechWithSC_second", "Get Other Technology"));
         }
 
         String message = player.getRepresentation() + ", please choose which technology you wish to get.";
-        MessageHelper.sendMessageToChannelWithButtons(event.getChannel(), message, buttons);
-        ButtonHelper.deleteMessage(event);
+        
+        if (!techType.contains("allTechResearchable")){
+            ButtonHelper.deleteMessage(event);
+        } else {
+            message += " The buttons shown correspond to technologies that the bot believes you meet the prerequisites for."
+                + " To get a technology that isn't shown, please use the \"Get Other Technology\" button.";
+        }
+        MessageHelper.sendMessageToChannelWithButtons(channel, message, buttons);
+        
     }
 
     @ButtonHandler("autoneticMemoryStep3")
@@ -739,7 +762,7 @@ public class UnfiledButtonHandlers { // TODO: move all of these methods to a bet
     @ButtonHandler("cymiaeHeroAutonetic")
     public static void cymiaeHeroAutonetic(ButtonInteractionEvent event, Player player, Game game) {
         List<Button> buttons = new ArrayList<>();
-        String msg2 = player.getFactionEmoji() + " is choosing to resolve their **Autonetic Memory** ability.";
+        String msg2 = player.getRepresentationNoPing() + " is choosing to resolve their **Autonetic Memory** ability.";
         MessageHelper.sendMessageToChannel(player.getCorrectChannel(), msg2);
         buttons.add(Buttons.green("autoneticMemoryStep3a", "Pick Action Card From the Discard"));
         buttons.add(Buttons.blue("autoneticMemoryStep3b", "Drop 1 infantry"));
@@ -1461,7 +1484,7 @@ public class UnfiledButtonHandlers { // TODO: move all of these methods to a bet
             if (event.getMessage().getContentRaw().contains("Net gain")) {
                 boolean cyber = false;
                 int netGain = ButtonHelper.checkNetGain(player, shortCCs);
-                finalCCs += ". Net command token gain was " + netGain;
+                finalCCs += ". You gained a net total of " + netGain + " command token" + (netGain == 1 ? "" : "s") + ".";
                 for (String pn : player.getPromissoryNotes().keySet()) {
                     if (!player.ownsPromissoryNote("ce") && "ce".equalsIgnoreCase(pn)) {
                         cyber = true;
@@ -1501,15 +1524,15 @@ public class UnfiledButtonHandlers { // TODO: move all of these methods to a bet
 
             if ("Done Redistributing Command Tokens".equalsIgnoreCase(buttonLabel)) {
                 MessageHelper.sendMessageToChannel(player.getCorrectChannel(),
-                    playerRep + ", initial command tokens were " + shortCCs + ". Final command tokens allocation is " + finalCCs + ".");
+                    playerRep + ", your initial command token allocation was " + shortCCs + ". Your final command token allocation is " + finalCCs + ".");
             } else {
                 if ("leadership".equalsIgnoreCase(buttonID)) {
-                    String message = playerRep + ", initial command tokens were " + shortCCs + ". Final command tokens allocation is "
+                    String message = playerRep + ", your initial command token allocation was " + shortCCs + ". Your final command tokens allocation is "
                         + finalCCs + ".";
                     ButtonHelper.sendMessageToRightStratThread(player, game, message, "leadership");
                 } else {
                     MessageHelper.sendMessageToChannel(player.getCorrectChannel(),
-                        playerRep + ", final command tokens allocation is " + finalCCs + ".");
+                        playerRep + ", your final command tokens allocation is " + finalCCs + ".");
                 }
 
             }
